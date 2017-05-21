@@ -12,6 +12,13 @@ import re
 import time
 import argparse
 
+import RPi.GPIO as GPIO
+import time
+
+import random
+
+import thread
+
 
 #IMPORTANT: (Width, Height) = (16, 8), but we're using it as (8, 16), so (0, 0) is (0, 7)
 
@@ -277,12 +284,33 @@ def draw_piece(virtual, piece, line):
 			y += 1
 	
 	
-	time.sleep(1)
+	time.sleep(0.5)
 	return not_reached_bottom
 	#for i in range(virtual.width - device.width):
 	#	print(str(i))
 	#	virtual.set_position((2-i, 0))
 	#	time.sleep(0.5)
+
+def read_input():
+        while True:
+                global right, rot, left
+
+                if right == True:
+                        right = GPIO.input(16)
+                if rot == True:
+                        rot = GPIO.input(20)
+                if left == True:
+                        left = GPIO.input(21)
+
+                if right == False: print "Right"
+                if left == False: print "Left"
+                if rot == False: print "Rot"
+
+                time.sleep(0.01)
+
+right = True
+left = True
+rot = True
 		
 def test():
     
@@ -293,9 +321,29 @@ def test():
 	virtual = viewport(device, width=16, height=8)
 	global CURRENT_PIECE
 	global CURRENT_PIECE_INDEX
-	line = 1
-	CURRENT_PIECE = PIECES[2][:]
-	CURRENT_PIECE_INDEX = 2
+
+	global right, left, rot
+
+        thread.start_new_thread(read_input, ())
+	
+	while True:
+                line = -4
+                piece = random.randint(0, 3)
+                CURRENT_PIECE = PIECES[piece][:]
+                CURRENT_PIECE_INDEX = piece
+                while draw_piece(virtual, piece, line):
+                        if right == False:
+                                move_right()
+                                right = True
+                        if rot == False:
+                                rotate()
+                                rot = True
+                        if left == False:
+                                move_left()
+                                left = True
+                        line += 1
+                        
+	"""
         #print zip(*lines_matrix[::-1])
 	while draw_piece(virtual, 0, line):
                 if line == 3:
@@ -330,11 +378,17 @@ def test():
 	while draw_piece(virtual, 2, line):
 		line += 1
 	for p in SCREEN: print p
+	"""
 	print("End draw")
 	time.sleep(1)
 		
 if __name__ == "__main__":
 	try:
+                GPIO.setmode(GPIO.BCM)
+
+                GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		while True:
 			for i in range(16):
 				for j in range(8):
