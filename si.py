@@ -62,13 +62,30 @@ ROTATE_INDEX = 0
 w, h = 8, 16;
 SCREEN = [[0 for x in range(w)] for y in range(h)]
 
+def check_collision(line):
+	i = 0
+	for ln in CURRENT_PIECE:
+		j = 0
+		if ln > 0:
+			if ln & 0x01 > 0 && SCREEN[line+i][j] == 1:
+				return True
+				
+			ln >>= 1
+			j += 1
+		i += 1
+		
+	return False
+			
 
-def move_right():
+
+def move_right(line):
         global CURRENT_PIECE
         i = 0
+		
+		old_piece = CURRENT_PIECE[:]
         #print CURRENT_PIECE
         for line in CURRENT_PIECE:
-		if line > 0:
+			if line > 0:
                         if line & 0x80 > 0:
                                 print "Move right blocked"
                                 return
@@ -78,6 +95,10 @@ def move_right():
                 i += 1
                         
         #print CURRENT_PIECE
+		if check_collision(line) == True:
+			CURRENT_PIECE = old_piece
+			print "Move right blocked"
+			return
         global MOVES_TRACE
         MOVES_TRACE.append(1)
         print "Moved right"
@@ -87,7 +108,7 @@ def move_right_raw():
         i = 0
         #print CURRENT_PIECE
         for line in CURRENT_PIECE:
-		if line > 0:
+			if line > 0:
                         if line & 0x80 > 0:
                                 print "Move right blocked"
                                 return
@@ -96,11 +117,13 @@ def move_right_raw():
                         #print "Line " + str(i) + ":" + str(line)
                 i += 1
 
-def move_left():
+def move_left(line):
         global CURRENT_PIECE
         i = 0
+		
+		old_piece = CURRENT_PIECE[:]
         for line in CURRENT_PIECE:
-		if line > 0:
+			if line > 0:
                         if line & 0x01 > 0:
                                 print "Move left blocked"
                                 return
@@ -110,6 +133,10 @@ def move_left():
                 i += 1
                         
         #print CURRENT_PIECE
+		if check_collision(line) == True:
+			CURRENT_PIECE = old_piece
+			print "Move left blocked"
+			return
         global MOVES_TRACE
         MOVES_TRACE.append(-1)
         print "Moved left"
@@ -118,7 +145,7 @@ def move_left_raw():
         global CURRENT_PIECE
         i = 0
         for line in CURRENT_PIECE:
-		if line > 0:
+			if line > 0:
                         if line & 0x01 > 0:
                                 print "Move left blocked"
                                 return
@@ -166,10 +193,12 @@ def get_lines_matrix():
                 i += 1
         return lines
 
-def rotate():
+def rotate(line):
         global CURRENT_PIECE
         global ROTATE_INDEX
 
+		old_piece = CURRENT_PIECE[:]
+		old_rotate_index = ROTATE_INDEX[:]
         if ROTATE_INDEX == 0:
                 CURRENT_PIECE = PIECES_90[CURRENT_PIECE_INDEX]
                 #print CURRENT_PIECE
@@ -190,6 +219,11 @@ def rotate():
                 CURRENT_PIECE = PIECES[CURRENT_PIECE_INDEX]
                 apply_moves()
                 ROTATE_INDEX = 0
+				
+		if check_collision(line) == True:
+			ROTATE_INDEX = old_rotate_index
+			CURRENT_PIECE = old_piece
+			print "Rotate blocked"
 
 def apply_moves():
         print CURRENT_PIECE
@@ -333,13 +367,13 @@ def test():
                 CURRENT_PIECE_INDEX = piece
                 while draw_piece(virtual, piece, line):
                         if right == False:
-                                move_right()
+                                move_right(line)
                                 right = True
                         if rot == False:
-                                rotate()
+                                rotate(line)
                                 rot = True
                         if left == False:
-                                move_left()
+                                move_left(line)
                                 left = True
                         line += 1
                         
